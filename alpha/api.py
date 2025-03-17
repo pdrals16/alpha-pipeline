@@ -9,7 +9,7 @@ from typing import Dict
 load_dotenv()
 
 API_KEY = os.environ.get("ALPHA_API")
-BASE_URL = os.environ.get("BASE_URL")
+BASE_URL = os.environ.get("ALPHA_URL")
 
 
 class AlphaVantage:
@@ -27,7 +27,7 @@ class AlphaVantage:
         Returns:
             Dict containing the data, or None if request failed
         """
-        reference = f"{params["symbol"]} - {params["function"]}"
+        reference = f"{params['symbol']} - {params['function']}"
         try:
             logging.info(f"Requesting for {reference}.")
             response = requests.get(BASE_URL, params=params)
