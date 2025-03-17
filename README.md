@@ -23,6 +23,17 @@ This file contains the AlphaVantage class which is responsible for interfacing w
 
 The class uses environment variables for configuration and implements comprehensive logging to track API interactions.
 
+#### transform.py
+
+This file contains functions responsible for transforming the data from raw JSON to structured formats:
+
+* read_daily_stock_json: Parses daily stock time series JSON and converts it into a list of dictionaries with standardized fields (date, open, high, low, close, volume)
+* read_company_overview_json: Extracts company overview information from JSON files
+* read_columns: Renames dataframe columns based on a JSON mapping file reference
+* save_as_csv: Exports processed data to CSV files with specified mode (append/overwrite)
+
+These transformation functions work in conjunction with the API data fetching to create a clean, structured dataset ready for analysis and storage.
+
 ## Deliverables
 
 This is a list of all deliverables from the project:
