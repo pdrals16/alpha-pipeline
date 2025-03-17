@@ -6,9 +6,22 @@ This project is an end-to-end ETL pipeline that scrapes financial data from publ
 
 You can see all tasks that I executed to develop this project on this [link](https://github.com/users/pdrals16/projects/1)
 
-## Explain how the project works
+## How the project works
 
-DO-TO.
+The project leverages Alpha Vantage's financial APIs to collect stock market data and company information. The core functionality is implemented in the AlphaVantage class which handles API requests with proper error handling and logging.
+
+### Core Files
+
+#### api.py
+
+This file contains the AlphaVantage class which is responsible for interfacing with the Alpha Vantage API. It provides methods to:
+
+* Initialize with a stock symbol
+* Make API requests with proper error handling
+* Fetch daily stock time series data
+* Retrieve company overview information
+
+The class uses environment variables for configuration and implements comprehensive logging to track API interactions.
 
 ## Deliverables
 
