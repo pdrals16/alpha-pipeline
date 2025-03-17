@@ -8,7 +8,7 @@ You can see all tasks that I executed to develop this project on this [link](htt
 
 ## Explain how the project works
 
-DO-TO
+DO-TO.
 
 ## Deliverables
 
