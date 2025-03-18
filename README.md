@@ -34,6 +34,47 @@ This file contains functions responsible for transforming the data from raw JSON
 
 These transformation functions work in conjunction with the API data fetching to create a clean, structured dataset ready for analysis and storage.
 
+
+## Database Setup
+
+The project uses PostgreSQL as its database, containerized with Docker for easy deployment and consistency across environments.
+
+### PostgreSQL Database
+
+The database is configured with the following credentials:
+- **Username**: postgres
+- **Password**: postgres
+- **Database Name**: postgres
+- **Port**: 5432
+
+### Starting the Database
+
+You can start the PostgreSQL database using Docker Compose:
+
+```bash
+make up
+```
+
+This command will start the PostgreSQL container in detached mode. Other useful commands include:
+
+- `make up-logs`: Start containers and follow logs
+- `make down`: Stop and remove containers
+- `make restart`: Restart all containers
+- `make logs`: View PostgreSQL container logs
+- `make ps`: List running containers
+- `make psql`: Connect to PostgreSQL with psql
+- `make clean`: Remove containers, volumes, and images
+
+### Connecting to the Database
+
+To connect to the PostgreSQL instance:
+
+```bash
+make psql
+```
+
+This will open a psql session with the correct credentials already provided.
+
 ## Deliverables
 
 This is a list of all deliverables from the project:
