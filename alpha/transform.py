@@ -1,6 +1,7 @@
 import json
 import pandas as pd
 
+from alpha.utils import extract_symbol
 
 def read_daily_stock_json(file_path) -> list[dict]:
     """
@@ -21,12 +22,13 @@ def read_daily_stock_json(file_path) -> list[dict]:
     rows = []
     for date, values in json_data["Time Series (Daily)"].items():
         row = {
-            "date": date,
-            "open": float(values["1. open"]),
-            "high": float(values["2. high"]),
-            "low": float(values["3. low"]),
-            "close": float(values["4. close"]),
-            "volume": int(values["5. volume"])
+            "nm_symbol": extract_symbol(file_path),
+            "dt_reference": date,
+            "vl_open": float(values["1. open"]),
+            "vl_high": float(values["2. high"]),
+            "vl_low": float(values["3. low"]),
+            "vl_close": float(values["4. close"]),
+            "qt_volume": int(values["5. volume"])
         }
         rows.append(row)
     return rows
