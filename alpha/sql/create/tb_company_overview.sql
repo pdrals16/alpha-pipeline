@@ -1,5 +1,5 @@
 CREATE TABLE tb_company_overview (
-    symbol VARCHAR(10) PRIMARY KEY,
+    nm_symbol VARCHAR(10) PRIMARY KEY,
     nm_asset_type VARCHAR(50),
     nm_name VARCHAR(255),
     nm_description TEXT,
