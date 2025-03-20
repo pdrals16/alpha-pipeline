@@ -1,7 +1,8 @@
 import json
 import pandas as pd
 
-from alpha.utils import extract_symbol
+from alpha.src.utils import extract_symbol
+
 
 def read_daily_stock_json(file_path) -> list[dict]:
     """

@@ -2,17 +2,15 @@ import os
 import logging
 import psycopg2
 
-from dotenv import load_dotenv 
-
-load_dotenv()
+from airflow.models import Variable 
 
 
 db_params = {
-    'host': os.environ.get("ALPHA_POSTGRES_HOST"),
-    'database': os.environ.get("ALPHA_POSTGRES_DB"),
-    'user': os.environ.get("ALPHA_POSTGRES_USER"),
-    'password': os.environ.get("ALPHA_POSTGRES_PASSWORD"),
-    'port': os.environ.get("ALPHA_POSTGRES_PORT")
+    'host': Variable.get("ALPHA_POSTGRES_HOST"),
+    'database': Variable.get("ALPHA_POSTGRES_DB"),
+    'user': Variable.get("ALPHA_POSTGRES_USER"),
+    'password': Variable.get("ALPHA_POSTGRES_PASSWORD"),
+    'port': Variable.get("ALPHA_POSTGRES_PORT")
 }
 
 def alpha_postgres_connection():
