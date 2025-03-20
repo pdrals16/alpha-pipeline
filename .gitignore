@@ -173,5 +173,7 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-# Data Folder
-data/*
+# Airflow
+airflow/data/*
+airflow/logs/*
+airflow/plugins/*
