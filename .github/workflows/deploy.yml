@@ -24,4 +24,4 @@ jobs:
 
       - name: Deploy to VPS
         run: |
-          ssh username@${{ secrets.VPS_IP }} 'cd /opt/alpha-pipeline/ && git pull origin main && cd .infra && make restart'
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} 'cd /opt/alpha-pipeline/ && git pull origin main && cd .infra && make restart'
