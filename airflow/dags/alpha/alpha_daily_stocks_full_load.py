@@ -10,7 +10,6 @@ from alpha.src.api_handler import save_api_content, transform_to_csv
 from alpha.src.template import ingest
 
 AIRFLOW_HOME = os.environ.get('AIRFLOW_HOME', '/opt/airflow')
-CONTEXT = "company_overview"
 
 default_args = {
     'owner': 'airflow',
@@ -25,9 +24,9 @@ with open("dags/alpha/symbols.yaml", "r") as f:
     job_yaml = yaml.safe_load(f)
 
     with DAG(
-        f'alpha_{CONTEXT}',
+        'alpha_daily_stocks_full_load',
         default_args=default_args,
-        description=f'Ingest Alpha {CONTEXT}',
+        description='Ingest Alpha Daily Stocks (Full Load)',
         schedule_interval=job_yaml["schedule_interval"],
         start_date=datetime(2024, 11, 1),
         catchup=False,
@@ -43,7 +42,8 @@ with open("dags/alpha/symbols.yaml", "r") as f:
                     python_callable=save_api_content,
                     op_kwargs={
                         "symbol": task_name,
-                        "context": CONTEXT,
+                        "context": "daily_stocks",
+                        "full_load": True,
                         "airflow_home": AIRFLOW_HOME
                     }
                 )
@@ -53,7 +53,8 @@ with open("dags/alpha/symbols.yaml", "r") as f:
                     python_callable=transform_to_csv,
                     op_kwargs={
                         "symbol": task_name,
-                        "context": CONTEXT,
+                        "context": "daily_stocks",
+                        "full_load": True,
                         "airflow_home": AIRFLOW_HOME
                     }
                 )
@@ -63,8 +64,9 @@ with open("dags/alpha/symbols.yaml", "r") as f:
                     python_callable=ingest,
                     op_kwargs={
                         "symbol": task_name,
-                        "context": CONTEXT,
-                        "unique_keys": ["nm_symbol"],
+                        "context": "daily_stocks",
+                        "full_load": True,
+                        "unique_keys": ["nm_symbol", "dt_reference"],
                         "airflow_home": AIRFLOW_HOME
                     }
                 )

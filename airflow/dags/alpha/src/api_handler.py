@@ -3,9 +3,7 @@ import logging
 import json
 import pandas as pd
 
-from datetime import datetime
 from alpha.src.api import AlphaVantage
-from alpha.src.checkpoint import get_files_to_process, update_checkpoint
 from alpha.src.transform import read_daily_stock_json, read_company_overview_json, read_columns, save_as_csv
 
 
@@ -18,53 +16,69 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger("size_logger")
-TODAY = datetime.now().strftime("%Y%m%d")
 
-def get_daily_stocks(**kwargs):
+
+def save_api_content(**kwargs):
     api = AlphaVantage(kwargs["symbol"])
-    stock_data = api.get_daily_stock_data()
+    full_load = kwargs.get("full_load", False)
+    date_reference = kwargs.get("ds")
 
-    if not os.path.exists(f"{kwargs["airflow_home"]}/data/raw/daily_stocks/{kwargs['symbol']}"):
-      os.makedirs(f"{kwargs["airflow_home"]}/data/raw/daily_stocks/{kwargs['symbol']}", exist_ok=True)
+    if kwargs.get("context")=="daily_stocks":
+        content = api.get_daily_stock_data(full_load)
+    elif kwargs.get("context")=="company_overview":
+        content = api.get_company_overview_data()
+    else:
+        raise(f"Do not exist context {kwargs.get("context")}.")
+    
+    if full_load:
+        context = kwargs.get("context") + "_full_load"
+    else:
+        context = kwargs.get("context")
 
-    if stock_data is not None:
-        print(f"Retrieved data for {kwargs["symbol"]}:")
-        with open(f"{kwargs["airflow_home"]}/data/raw/daily_stocks/{kwargs['symbol']}/{TODAY}_{kwargs["symbol"]}.json", "w") as f:
-            f.write(json.dumps(stock_data, indent=4))
+    if not os.path.exists(f"{kwargs["airflow_home"]}/data/raw/{context}/{kwargs['symbol']}"):
+        os.makedirs(f"{kwargs["airflow_home"]}/data/raw/{context}/{kwargs['symbol']}", exist_ok=True)
 
-
-def get_company_overview(**kwargs):
-    api = AlphaVantage(kwargs["symbol"])
-    stock_data = api.get_company_overview_data()
-
-    if not os.path.exists(f"{kwargs["airflow_home"]}/data/raw/company_overview/{kwargs['symbol']}"):
-      os.makedirs(f"{kwargs["airflow_home"]}/data/raw/company_overview/{kwargs['symbol']}", exist_ok=True)
-
-    if stock_data is not None:
-        print(f"Retrieved data for {kwargs["symbol"]}:")
-        with open(f"{kwargs["airflow_home"]}/data/raw/company_overview/{kwargs['symbol']}/{TODAY}_{kwargs["symbol"]}.json", "w") as f:
-            f.write(json.dumps(stock_data, indent=4))
+    if content is not None:
+        logger.info(f"Retrieved data for {kwargs["symbol"]}:")
+        with open(f"{kwargs["airflow_home"]}/data/raw/{context}/{kwargs['symbol']}/{date_reference}_{kwargs["symbol"]}.json", "w") as f:
+            f.write(json.dumps(content, indent=4))
+    return None
 
 
 def transform_to_csv(**kwargs):
-    files = get_files_to_process(f"{kwargs["airflow_home"]}/data/raw/{kwargs["context"]}/{kwargs['symbol']}", "*.json", f"{kwargs["airflow_home"]}/data/raw/{kwargs["context"]}/{kwargs['symbol']}/.checkpoint")
+    date_reference = kwargs['ds']
+    full_load = kwargs.get('full_load', False)
     
-    for file in files:
-        print(f"Processing {file}...")
+    if full_load:
+        context = kwargs.get("context") + "_full_load"
+    else:
+        context = kwargs.get("context")
 
-        if kwargs["context"]=="daily_stocks":
-            data = read_daily_stock_json(file)
-            df = pd.DataFrame(data)
-        elif kwargs["context"]=="company_overview":
-            data = read_company_overview_json(file)
-            df_ = pd.DataFrame(data)
-            df = read_columns(df_, f"{kwargs["airflow_home"]}/dags/alpha/src/config/rename_company_overview.json")
+    file_name = f"{kwargs["airflow_home"]}/data/raw/{context}/{kwargs['symbol']}/{date_reference}_{kwargs["symbol"]}.json"
+    logger.info(f"Processing {file_name}...")
+
+    if kwargs["context"]=="daily_stocks":
+        data = read_daily_stock_json(file_name)
+        df_ = pd.DataFrame(data)
+
+        if not full_load:
+            logger.info("Running a daily mode.")
+            df = df_[df_["dt_reference"]==date_reference]
         else:
-            raise("There is no dataframe!")
+            logger.info("Running a full load.")
+            df = df_
 
-        if not os.path.exists(f"{kwargs["airflow_home"]}/data/bronze/{kwargs["context"]}/{kwargs['symbol']}"):
-            os.makedirs(f"{kwargs["airflow_home"]}/data/bronze/{kwargs["context"]}/{kwargs['symbol']}", exist_ok=True)
+    elif kwargs["context"]=="company_overview":
+        data = read_company_overview_json(file_name)
+        df_ = pd.DataFrame(data)
 
-        save_as_csv(df, f"{kwargs["airflow_home"]}/data/bronze/{kwargs["context"]}/{kwargs['symbol']}/{TODAY}_{kwargs["symbol"]}.csv", "w")
+        df = read_columns(df_, f"{kwargs["airflow_home"]}/dags/alpha/src/config/rename_company_overview.json")
+    else:
+        raise(f"Do not exist context {kwargs.get("context")}.")
 
-        update_checkpoint(file, f"{kwargs["airflow_home"]}/data/raw/{kwargs["context"]}/{kwargs['symbol']}/.checkpoint")
+    if not os.path.exists(f"{kwargs["airflow_home"]}/data/bronze/{context}/{kwargs['symbol']}"):
+        os.makedirs(f"{kwargs["airflow_home"]}/data/bronze/{context}/{kwargs['symbol']}", exist_ok=True)
+
+    save_as_csv(df, f"{kwargs["airflow_home"]}/data/bronze/{context}/{kwargs['symbol']}/{date_reference}_{kwargs["symbol"]}.csv", "w")
+
+    return None
