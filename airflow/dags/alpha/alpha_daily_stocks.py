@@ -6,7 +6,7 @@ from airflow.configuration import conf
 from airflow.operators.python import PythonOperator
 from airflow.utils.task_group import TaskGroup
 from datetime import datetime, timedelta
-from alpha.src.api_handler import get_daily_stocks, transform_to_csv
+from alpha.src.api_handler import save_api_content, transform_to_csv
 from alpha.src.template import ingest
 
 AIRFLOW_HOME = os.environ.get('AIRFLOW_HOME', '/opt/airflow')
@@ -39,9 +39,10 @@ with open("dags/alpha/symbols.yaml", "r") as f:
             with TaskGroup(group_id=task_name, dag=dag) as task:
                 task_api_ingest = PythonOperator(
                     task_id='api_ingest',
-                    python_callable=get_daily_stocks,
+                    python_callable=save_api_content,
                     op_kwargs={
                         "symbol": task_name,
+                        "context": "daily_stocks",
                         "airflow_home": AIRFLOW_HOME
                     }
                 )

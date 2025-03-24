@@ -3,7 +3,6 @@ import sys
 import logging
 import requests
 
-from airflow.models import Variable 
 from typing import Dict
 
 
@@ -49,7 +48,7 @@ class AlphaVantage:
             return None
 
 
-    def get_daily_stock_data(self) -> Dict:
+    def get_daily_stock_data(self, full_load=False) -> Dict:
         """
         Fetch daily time series stock data from Alpha Vantage API.
         
@@ -59,11 +58,16 @@ class AlphaVantage:
         Returns:
             Dict containing the daily stock data, or None if request failed
         """
+        if full_load:
+            outputsize = "full"
+        else:
+            outputsize = "compact"
+
         params = {
             "function": "TIME_SERIES_DAILY",
             "symbol": self.symbol,
             "apikey": API_KEY,
-            "outputsize": "compact"
+            "outputsize": outputsize
         }
 
         data = self.get_request_data(params=params) 

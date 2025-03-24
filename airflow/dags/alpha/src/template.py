@@ -1,11 +1,18 @@
-import os
 import logging
 import pandas as pd
 
 from alpha.src.connect import alpha_postgres_connection
-from alpha.src.checkpoint import get_files_to_process, update_checkpoint
 
 def ingest(**kwargs):
+    date_reference = kwargs["ds"]
+    full_load = kwargs.get('full_load', False)
+    
+    if full_load:
+        context = kwargs.get("context") + "_full_load"
+    else:
+        context = kwargs.get("context")
+
+
     conn, cursor = alpha_postgres_connection()
 
     cursor.execute(f"""
@@ -26,54 +33,51 @@ def ingest(**kwargs):
     else:
         logging.info(f"Table tb_{kwargs["context"]} exists.")
 
-    files = get_files_to_process(f'{kwargs["airflow_home"]}/data/bronze/{kwargs["context"]}/{kwargs['symbol']}', '*.csv', f'{kwargs["airflow_home"]}/data/bronze/{kwargs["context"]}/{kwargs['symbol']}/.checkpoint')
-    for file in files:
-        print(f"Processing {file}...")
+    file_name = f"{kwargs["airflow_home"]}/data/bronze/{context}/{kwargs['symbol']}/{date_reference}_{kwargs["symbol"]}.csv"
+    logging.info(f"Processing {file_name}...")
 
-        df = pd.read_csv(file)
+    df = pd.read_csv(file_name)
+    
+    values = [tuple(x) for x in df.to_numpy()]
+    logging.info(f"There are {len(values)} to ingest at table tb_{kwargs["context"]}.")
+    
+    try:
+        columns = ','.join(df.columns)
+        placeholders = ','.join(['%s'] * len(df.columns))
         
-        values = [tuple(x) for x in df.to_numpy()]
-        
-        try:
-            columns = ','.join(df.columns)
-            placeholders = ','.join(['%s'] * len(df.columns))
+        unique_keys = kwargs.get("unique_keys", None)
+        if unique_keys:
+            logging.info(f"There are unique columns: {unique_keys}")
+            update_columns = [col for col in df.columns if col not in unique_keys]
             
-            unique_keys = kwargs.get("unique_keys", None)
-            if unique_keys:
-                logging.info(f"There are unique columns: {unique_keys}")
-                update_columns = [col for col in df.columns if col not in unique_keys]
-                
-                if update_columns:
-                    update_clause = ", ".join([f"{col} = EXCLUDED.{col}" for col in update_columns])
-                    query = f"""
-                        INSERT INTO tb_{kwargs["context"]} ({columns}) 
-                        VALUES ({placeholders})
-                        ON CONFLICT ({', '.join(unique_keys)}) 
-                        DO UPDATE SET {update_clause}
-                    """
-                else:
-                    query = f"""
-                        INSERT INTO tb_{kwargs["context"]} ({columns}) 
-                        VALUES ({placeholders})
-                        ON CONFLICT ({', '.join(unique_keys)}) 
-                        DO NOTHING
-                    """
+            if update_columns:
+                update_clause = ", ".join([f"{col} = EXCLUDED.{col}" for col in update_columns])
+                query = f"""
+                    INSERT INTO tb_{kwargs["context"]} ({columns}) 
+                    VALUES ({placeholders})
+                    ON CONFLICT ({', '.join(unique_keys)}) 
+                    DO UPDATE SET {update_clause}
+                """
             else:
-                query = f"INSERT INTO tb_{kwargs["context"]} ({columns}) VALUES ({placeholders})"
-            
-            cursor.executemany(query, values)
-            conn.commit()
-            
-        except Exception as e:
-            conn.rollback()
-            print(f"Error: {e}")
-            logging.error(f"Error processing {file}: {e}")
-        finally:
-            pass
+                query = f"""
+                    INSERT INTO tb_{kwargs["context"]} ({columns}) 
+                    VALUES ({placeholders})
+                    ON CONFLICT ({', '.join(unique_keys)}) 
+                    DO NOTHING
+                """
+        else:
+            query = f"INSERT INTO tb_{kwargs["context"]} ({columns}) VALUES ({placeholders})"
         
-        update_checkpoint(file, f'{kwargs["airflow_home"]}/data/bronze/{kwargs["context"]}/{kwargs['symbol']}/.checkpoint')
-
-    # Close connection outside the loop
+        cursor.executemany(query, values)
+        conn.commit()
+        
+    except Exception as e:
+        conn.rollback()
+        logging.info(f"Error: {e}")
+        logging.error(f"Error processing {file_name}: {e}")
+    finally:
+        pass
+   
     cursor.close()
     conn.close()
 
