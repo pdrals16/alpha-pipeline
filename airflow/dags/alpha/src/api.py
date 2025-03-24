@@ -7,8 +7,8 @@ from airflow.models import Variable
 from typing import Dict
 
 
-API_KEY = Variable.get("ALPHA_API") 
-BASE_URL = Variable.get("ALPHA_URL")
+API_KEY = os.environ.get("ALPHA_API") 
+BASE_URL = os.environ.get("ALPHA_URL")
 
 
 class AlphaVantage:

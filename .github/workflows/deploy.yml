@@ -22,6 +22,11 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.VPS_IP }} >> ~/.ssh/known_hosts
 
+      - name: Create .env file from secrets
+        run: |
+          echo "${{ secrets.ENV_FILE_CONTENT }}" > .infra/.env
+
       - name: Deploy to VPS
         run: |
+          scp .infra/.env ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }}:/opt/alpha-pipeline/.infra/
           ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} 'cd /opt/alpha-pipeline/ && git pull origin main && cd .infra && make restart'
